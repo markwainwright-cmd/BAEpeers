@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Competitor Leader Content Themes</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{background:#0a0e17;color:#c8cdd5;font-family:'DM Sans',sans-serif;overflow:hidden;height:100vh}
+  #header{position:fixed;top:0;left:0;right:0;z-index:100;padding:20px 28px 14px;background:linear-gradient(to bottom,#0a0e17 60%,transparent);pointer-events:none}
+  #header h1{font-size:18px;font-weight:700;color:#e8ecf1;letter-spacing:-0.3px}
+  #header .subtitle{font-size:12px;color:#606878;margin-top:3px;font-family:'JetBrains Mono',monospace}
+  #controls{position:fixed;top:20px;right:24px;z-index:100;display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;max-width:420px}
+  .filter-btn{padding:6px 14px;border:1px solid #1e2430;border-radius:20px;background:#0f1420;color:#808898;font-size:11px;font-family:'DM Sans',sans-serif;font-weight:500;cursor:pointer;transition:all 0.2s}
+  .filter-btn:hover{border-color:#2a3040;color:#b0b8c8}
+  .filter-btn.active{background:#161c28;border-color:#3a4258;color:#e0e4ea}
+  .filter-btn.co-rr.active{border-color:#4a7dcc;color:#6fa0e8;background:rgba(74,125,204,0.1)}
+  .filter-btn.co-an.active{border-color:#cc6a4a;color:#e8866a;background:rgba(204,106,74,0.1)}
+  .filter-btn.co-he.active{border-color:#6acc4a;color:#88e86a;background:rgba(106,204,74,0.1)}
+  #chart{width:100%;height:100vh}
+  .tooltip{position:fixed;pointer-events:none;background:#141924;border:1px solid #252d3a;border-radius:10px;padding:14px 18px;font-size:12px;color:#c8cdd5;max-width:340px;z-index:200;box-shadow:0 8px 32px rgba(0,0,0,0.5);opacity:0;transition:opacity 0.15s}
+  .tooltip.visible{opacity:1}
+  .tooltip .tt-title{font-weight:700;font-size:14px;color:#e8ecf1;margin-bottom:4px}
+  .tooltip .tt-cluster{font-size:10px;font-family:'JetBrains Mono',monospace;margin-bottom:8px;padding:2px 8px;border-radius:4px;display:inline-block}
+  .tooltip .tt-stat{display:flex;justify-content:space-between;margin:3px 0;font-family:'JetBrains Mono',monospace;font-size:11px}
+  .tooltip .tt-stat .label{color:#606878}.tooltip .tt-stat .value{color:#e0e4ea;font-weight:500}
+  .tooltip .tt-section{margin-top:10px;border-top:1px solid #1e2430;padding-top:8px}
+  .tooltip .tt-section-title{font-size:10px;color:#505868;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;font-family:'JetBrains Mono',monospace}
+  .tooltip .tt-row{display:flex;align-items:center;gap:8px;margin:4px 0;font-size:11px}
+  .tooltip .tt-bar-bg{width:60px;height:4px;background:#1a2030;border-radius:2px;flex-shrink:0}
+  .tooltip .tt-bar{height:100%;border-radius:2px}
+  #legend{position:fixed;bottom:20px;left:24px;z-index:100;font-size:11px;color:#505868}
+  .legend-row{display:flex;gap:16px;margin-bottom:5px}
+  .legend-item{display:flex;align-items:center;gap:6px}
+  .legend-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+  .legend-ring{width:10px;height:10px;border-radius:50%;border:2px solid;background:transparent;flex-shrink:0}
+  #info-panel{position:fixed;bottom:20px;right:24px;z-index:100;font-size:11px;color:#404858;font-family:'JetBrains Mono',monospace;text-align:right}
+</style>
+</head>
+<body>
+<div id="header">
+  <h1>Competitor Leader Content Themes</h1>
+  <div class="subtitle">119 posts · 11 leaders · topic clusters by engagement</div>
+</div>
+<div id="controls">
+  <button class="filter-btn co-rr active" data-value="Rolls-Royce">Rolls-Royce</button>
+  <button class="filter-btn co-an active" data-value="Anduril">Anduril</button>
+  <button class="filter-btn co-he active" data-value="Helsing">Helsing</button>
+</div>
+<svg id="chart"></svg>
+<div class="tooltip" id="tooltip"></div>
+<div id="legend">
+  <div class="legend-row" style="margin-bottom:8px">
+    <div class="legend-item"><div class="legend-dot" style="background:#4a7dcc"></div> Rolls-Royce</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#cc6a4a"></div> Anduril</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#6acc4a"></div> Helsing</div>
+  </div>
+  <div class="legend-row">
+    <div class="legend-item"><div class="legend-ring" style="border-color:#c9a84c"></div> Business Performance</div>
+    <div class="legend-item"><div class="legend-ring" style="border-color:#5ca8cc"></div> Products & Technology</div>
+    <div class="legend-item"><div class="legend-ring" style="border-color:#cc5c8a"></div> Autonomous & AI</div>
+  </div>
+  <div class="legend-row">
+    <div class="legend-item"><div class="legend-ring" style="border-color:#8a7acc"></div> Defence & Policy</div>
+    <div class="legend-item"><div class="legend-ring" style="border-color:#5ccc94"></div> People & Comms</div>
+    <div class="legend-item"><div class="legend-ring" style="border-color:#cc985c"></div> Relationships & Growth</div>
+  </div>
+  <div style="margin-top:6px;color:#3a4250">Outer ring = company share of engagement · Node size = total likes</div>
+</div>
+<div id="info-panel">hover for detail · click to isolate · scroll to zoom</div>
+
+<script>
+const subThemes={
+  "Corporate Transformation":{likes:19682,posts:15,cluster:"Business Performance",companies:{"Rolls-Royce":19682},authors:["Tufan Erginbilgic","Helen McCabe","Rob Watson","Sarah Armstrong"]},
+  "Financial Results":{likes:14081,posts:9,cluster:"Business Performance",companies:{"Rolls-Royce":14081},authors:["Tufan Erginbilgic","Helen McCabe","Rob Watson","Sarah Armstrong"]},
+  "Aero Engines":{likes:10327,posts:12,cluster:"Products & Technology",companies:{"Rolls-Royce":10327},authors:["Tufan Erginbilgic","Rob Watson"]},
+  "Nuclear & SMR":{likes:5988,posts:3,cluster:"Products & Technology",companies:{"Rolls-Royce":5988},authors:["Tufan Erginbilgic"]},
+  "Global Expansion":{likes:4307,posts:5,cluster:"Relationships & Growth",companies:{"Rolls-Royce":4307},authors:["Helen McCabe","Rob Watson","Sarah Armstrong"]},
+  "Customer & Industry Events":{likes:3977,posts:6,cluster:"Relationships & Growth",companies:{"Rolls-Royce":3977},authors:["Helen McCabe","Rob Watson"]},
+  "People & Talent":{likes:2928,posts:10,cluster:"People & Comms",companies:{"Rolls-Royce":2732,"Helsing":196},authors:["Helen McCabe","Rob Watson","Sarah Armstrong","Torsten Reil"]},
+  "Comms & Media Strategy":{likes:2498,posts:4,cluster:"People & Comms",companies:{"Anduril":2498},authors:["Shannon Prior"]},
+  "Partnerships":{likes:1687,posts:7,cluster:"Relationships & Growth",companies:{"Rolls-Royce":1093,"Helsing":246,"Anduril":348},authors:["Rob Watson","Torsten Reil","Babak Siavoshy"]},
+  "Autonomous Systems":{likes:1594,posts:8,cluster:"Autonomous & AI",companies:{"Anduril":1594},authors:["Trae Stephens","Matthew Steckman","Babak Siavoshy"]},
+  "MRO & Aftermarket":{likes:1493,posts:3,cluster:"Products & Technology",companies:{"Rolls-Royce":1493},authors:["Rob Watson"]},
+  "Thought Leadership":{likes:1382,posts:5,cluster:"People & Comms",companies:{"Anduril":1382},authors:["Trae Stephens","Matthew Steckman"]},
+  "Defence & Government Policy":{likes:1310,posts:2,cluster:"Defence & Policy",companies:{"Rolls-Royce":1310},authors:["Tufan Erginbilgic"]},
+  "Defence Manufacturing":{likes:1279,posts:5,cluster:"Defence & Policy",companies:{"Anduril":1279},authors:["Trae Stephens","Matthew Steckman","Babak Siavoshy"]},
+  "Personal Reflection":{likes:1124,posts:3,cluster:"People & Comms",companies:{"Helsing":941,"Anduril":183},authors:["Antoine Bordes","Babak Siavoshy"]},
+  "European Defence":{likes:1096,posts:6,cluster:"Defence & Policy",companies:{"Helsing":1096},authors:["Torsten Reil","Antoine Bordes"]},
+  "Next-Gen Technology":{likes:1068,posts:1,cluster:"Products & Technology",companies:{"Rolls-Royce":1068},authors:["Rob Watson"]},
+  "Industrial Strategy":{likes:963,posts:1,cluster:"Business Performance",companies:{"Rolls-Royce":963},authors:["Tufan Erginbilgic"]},
+  "Executive Profiling":{likes:894,posts:2,cluster:"People & Comms",companies:{"Anduril":894},authors:["Shannon Prior"]},
+  "Drones & Strike Systems":{likes:840,posts:3,cluster:"Autonomous & AI",companies:{"Helsing":840},authors:["Torsten Reil"]},
+  "Government Relations":{likes:825,posts:1,cluster:"Defence & Policy",companies:{"Rolls-Royce":825},authors:["Rob Watson"]},
+  "Defence Acquisition Reform":{likes:697,posts:2,cluster:"Defence & Policy",companies:{"Anduril":697},authors:["Matthew Steckman"]},
+  "AI & Autonomy":{likes:596,posts:6,cluster:"Autonomous & AI",companies:{"Helsing":596},authors:["Torsten Reil","Antoine Bordes"]},
+  "Defence & Submarines":{likes:559,posts:1,cluster:"Defence & Policy",companies:{"Rolls-Royce":559},authors:["Helen McCabe"]},
+  "Defence & AI Deterrence":{likes:498,posts:1,cluster:"Autonomous & AI",companies:{"Anduril":498},authors:["Shannon Prior"]},
+  "Personal Milestones":{likes:480,posts:2,cluster:"People & Comms",companies:{"Anduril":480},authors:["Matthew Steckman"]},
+  "Recruitment":{likes:422,posts:7,cluster:"People & Comms",companies:{"Anduril":268,"Helsing":154},authors:["Shannon Prior","Antoine Bordes","Babak Siavoshy","Dr. Robert Fink"]},
+  "Company Amplification":{likes:388,posts:8,cluster:"Relationships & Growth",companies:{"Anduril":388},authors:["Babak Siavoshy"]},
+  "Pro-Europe Advocacy":{likes:285,posts:3,cluster:"Defence & Policy",companies:{"Helsing":285},authors:["Torsten Reil"]},
+  "Company Milestones":{likes:258,posts:1,cluster:"Relationships & Growth",companies:{"Anduril":258},authors:["Shannon Prior"]},
+  "Government & Military":{likes:204,posts:1,cluster:"Defence & Policy",companies:{"Anduril":204},authors:["Matthew Steckman"]},
+  "Subsurface Surveillance":{likes:193,posts:2,cluster:"Products & Technology",companies:{"Helsing":193},authors:["Torsten Reil","Antoine Bordes"]},
+  "Subsurface & Maritime":{likes:164,posts:2,cluster:"Products & Technology",companies:{"Anduril":164},authors:["Babak Siavoshy"]},
+  "Electronic Warfare":{likes:153,posts:2,cluster:"Defence & Policy",companies:{"Helsing":153},authors:["Torsten Reil","Antoine Bordes"]},
+  "Autonomous Combat Aircraft":{likes:67,posts:1,cluster:"Autonomous & AI",companies:{"Helsing":67},authors:["Antoine Bordes"]}
+};
+
+const companyMap={"Tufan Erginbilgic":"Rolls-Royce","Helen McCabe":"Rolls-Royce","Rob Watson":"Rolls-Royce","Sarah Armstrong":"Rolls-Royce","Trae Stephens":"Anduril","Shannon Prior":"Anduril","Matthew Steckman":"Anduril","Babak Siavoshy":"Anduril","Torsten Reil":"Helsing","Antoine Bordes":"Helsing","Dr. Robert Fink":"Helsing"};
+const clusterColors={"Business Performance":"#c9a84c","Products & Technology":"#5ca8cc","Autonomous & AI":"#cc5c8a","Defence & Policy":"#8a7acc","People & Comms":"#5ccc94","Relationships & Growth":"#cc985c"};
+const companyColors={"Rolls-Royce":"#4a7dcc","Anduril":"#cc6a4a","Helsing":"#6acc4a"};
+const companyOrder=["Rolls-Royce","Anduril","Helsing"];
+
+const nodes=[],links=[];
+const macroStats={};
+for(const[n,d]of Object.entries(subThemes)){
+  const cl=d.cluster;
+  if(!macroStats[cl])macroStats[cl]={likes:0,posts:0,subs:0,companies:{}};
+  macroStats[cl].likes+=d.likes;macroStats[cl].posts+=d.posts;macroStats[cl].subs++;
+  for(const[co,lk]of Object.entries(d.companies))macroStats[cl].companies[co]=(macroStats[cl].companies[co]||0)+lk;
+}
+for(const[cluster,s]of Object.entries(macroStats)){
+  nodes.push({id:cluster,type:"macro",cluster,likes:s.likes,posts:s.posts,subCount:s.subs,companies:s.companies,radius:Math.max(30,Math.sqrt(s.likes/15))});
+}
+for(const[name,d]of Object.entries(subThemes)){
+  nodes.push({id:name,type:"sub",cluster:d.cluster,likes:d.likes,posts:d.posts,companies:d.companies,authors:d.authors,radius:Math.max(5,Math.sqrt(d.likes/90))});
+  links.push({source:d.cluster,target:name,weight:Math.sqrt(d.likes/150)});
+}
+
+const W=window.innerWidth,H=window.innerHeight;
+const svg=d3.select("#chart").attr("width",W).attr("height",H);
+const defs=svg.append("defs");
+const glow=defs.append("filter").attr("id","glow").attr("x","-50%").attr("y","-50%").attr("width","200%").attr("height","200%");
+glow.append("feGaussianBlur").attr("stdDeviation","8").attr("result","b");
+const gm=glow.append("feMerge");gm.append("feMergeNode").attr("in","b");gm.append("feMergeNode").attr("in","SourceGraphic");
+
+const g=svg.append("g");
+svg.call(d3.zoom().scaleExtent([0.2,5]).on("zoom",e=>g.attr("transform",e.transform)));
+
+// Tighter cluster anchors — hexagonal ring around centre
+const cx=W/2, cy=H/2, spread=Math.min(W,H)*0.16;
+const anchors={
+  "Business Performance":     {x: cx + spread*Math.cos(Math.PI*1.5),  y: cy + spread*Math.sin(Math.PI*1.5)},
+  "Products & Technology":    {x: cx + spread*Math.cos(Math.PI*1.83), y: cy + spread*Math.sin(Math.PI*1.83)},
+  "Autonomous & AI":          {x: cx + spread*Math.cos(Math.PI*0.17), y: cy + spread*Math.sin(Math.PI*0.17)},
+  "Defence & Policy":         {x: cx + spread*Math.cos(Math.PI*0.5),  y: cy + spread*Math.sin(Math.PI*0.5)},
+  "People & Comms":           {x: cx + spread*Math.cos(Math.PI*0.83), y: cy + spread*Math.sin(Math.PI*0.83)},
+  "Relationships & Growth":   {x: cx + spread*Math.cos(Math.PI*1.17), y: cy + spread*Math.sin(Math.PI*1.17)}
+};
+
+const sim=d3.forceSimulation(nodes)
+  .force("link",d3.forceLink(links).id(d=>d.id).distance(d=>40+d.weight*3).strength(0.5))
+  .force("charge",d3.forceManyBody().strength(d=>d.type==="macro"?-450:-40))
+  .force("collision",d3.forceCollide().radius(d=>d.radius+(d.type==="macro"?20:6)).strength(0.9))
+  .force("x",d3.forceX(d=>{const a=anchors[d.type==="macro"?d.id:d.cluster];return a?a.x:cx}).strength(d=>d.type==="macro"?0.25:0.12))
+  .force("y",d3.forceY(d=>{const a=anchors[d.type==="macro"?d.id:d.cluster];return a?a.y:cy}).strength(d=>d.type==="macro"?0.25:0.12));
+
+// Links
+const linkSel=g.append("g").selectAll("line").data(links).join("line")
+  .attr("stroke",d=>{const m=nodes.find(n=>n.id===(typeof d.source==='object'?d.source.id:d.source));return m?clusterColors[m.cluster]:"#333"})
+  .attr("stroke-opacity",0.07).attr("stroke-width",d=>Math.max(0.4,d.weight*0.3));
+
+// Sub nodes
+const subG=g.append("g");
+const subSel=subG.selectAll("g").data(nodes.filter(d=>d.type==="sub")).join("g")
+  .attr("cursor","pointer").call(d3.drag().on("start",ds).on("drag",dg).on("end",de));
+
+subSel.each(function(d){
+  const el=d3.select(this),r=d.radius+3,total=d.likes;
+  const arc=d3.arc().innerRadius(r-1.5).outerRadius(r+1.5);
+  let sa=0;
+  for(const co of companyOrder){const lk=d.companies[co]||0;if(!lk)continue;const a=(lk/total)*Math.PI*2;
+    el.append("path").attr("class","co-arc").attr("d",arc({startAngle:sa,endAngle:sa+a})).attr("fill",companyColors[co]).attr("opacity",0.7);sa+=a;}
+});
+subSel.append("circle").attr("class","sub-main").attr("r",d=>d.radius)
+  .attr("fill",d=>clusterColors[d.cluster]).attr("fill-opacity",0.14)
+  .attr("stroke",d=>clusterColors[d.cluster]).attr("stroke-opacity",0.3).attr("stroke-width",0.8);
+subSel.append("text").attr("class","sub-label").text(d=>d.id)
+  .attr("text-anchor","middle").attr("dy",d=>d.radius+12)
+  .attr("fill",d=>clusterColors[d.cluster]).attr("fill-opacity",0.55)
+  .attr("font-size",d=>Math.max(8,Math.min(10.5,d.radius*0.5)))
+  .attr("font-family","'DM Sans',sans-serif").attr("font-weight",500);
+
+// Macro nodes
+const macroG=g.append("g");
+const macroSel=macroG.selectAll("g").data(nodes.filter(d=>d.type==="macro")).join("g")
+  .attr("cursor","pointer").call(d3.drag().on("start",ds).on("drag",dg).on("end",de));
+
+macroSel.append("circle").attr("r",d=>d.radius+14)
+  .attr("fill",d=>clusterColors[d.cluster]).attr("fill-opacity",0.025).attr("filter","url(#glow)");
+
+macroSel.each(function(d){
+  const el=d3.select(this),r=d.radius+5,total=d.likes;
+  const arc=d3.arc().innerRadius(r-3).outerRadius(r+3);
+  let sa=0;
+  for(const co of companyOrder){const lk=d.companies[co]||0;if(!lk)continue;const a=(lk/total)*Math.PI*2;
+    el.append("path").attr("class","co-arc").attr("d",arc({startAngle:sa,endAngle:sa+a})).attr("fill",companyColors[co]).attr("opacity",0.6);sa+=a;}
+});
+
+macroSel.append("circle").attr("class","macro-main").attr("r",d=>d.radius)
+  .attr("fill",d=>clusterColors[d.cluster]).attr("fill-opacity",0.1)
+  .attr("stroke",d=>clusterColors[d.cluster]).attr("stroke-opacity",0.45).attr("stroke-width",1.5);
+
+macroSel.append("text").attr("class","macro-label").each(function(d){
+  const el=d3.select(this);
+  const parts=d.id.split(" & ");
+  if(parts.length===2){el.append("tspan").attr("x",0).attr("dy","-0.3em").text(parts[0]+" &");el.append("tspan").attr("x",0).attr("dy","1.2em").text(parts[1]);}
+  else{const w=d.id.split(" ");if(w.length>1){el.append("tspan").attr("x",0).attr("dy","-0.3em").text(w[0]);el.append("tspan").attr("x",0).attr("dy","1.2em").text(w.slice(1).join(" "));}else el.text(d.id);}
+}).attr("text-anchor","middle").attr("fill",d=>clusterColors[d.cluster]).attr("fill-opacity",0.85)
+  .attr("font-size",d=>Math.max(10,Math.min(13,d.radius*0.3))).attr("font-family","'DM Sans',sans-serif").attr("font-weight",700);
+
+macroSel.append("text").attr("class","macro-count").text(d=>d.likes.toLocaleString()+" likes")
+  .attr("text-anchor","middle").attr("dy",d=>d.radius+17)
+  .attr("fill",d=>clusterColors[d.cluster]).attr("fill-opacity",0.35)
+  .attr("font-size",9).attr("font-family","'JetBrains Mono',monospace");
+
+// Tooltip
+const tooltip=d3.select("#tooltip");
+function showTT(event,d){
+  const color=clusterColors[d.cluster];
+  let h=`<div class="tt-title">${d.id}</div>`;
+  if(d.type==="macro"){
+    h+=`<div class="tt-cluster" style="color:${color};background:${color}18;border:1px solid ${color}40">Macro Theme</div>`;
+    h+=`<div class="tt-stat"><span class="label">Total engagement</span><span class="value">${d.likes.toLocaleString()} likes</span></div>`;
+    h+=`<div class="tt-stat"><span class="label">Posts</span><span class="value">${d.posts}</span></div>`;
+    h+=`<div class="tt-stat"><span class="label">Sub-themes</span><span class="value">${d.subCount}</span></div>`;
+    h+='<div class="tt-section"><div class="tt-section-title">Company share</div>';
+    const mx=Math.max(...Object.values(d.companies));
+    for(const co of companyOrder){const lk=d.companies[co]||0;if(!lk)continue;
+      h+=`<div class="tt-row"><span style="flex:1;color:${companyColors[co]}">${co}</span><div class="tt-bar-bg"><div class="tt-bar" style="width:${lk/mx*100}%;background:${companyColors[co]}"></div></div><span style="color:#e0e4ea;font-family:'JetBrains Mono',monospace;font-size:10px;min-width:50px;text-align:right">${(lk/d.likes*100).toFixed(0)}%</span></div>`;}
+    h+='</div>';
+    const subs=Object.entries(subThemes).filter(([,v])=>v.cluster===d.id).sort((a,b)=>b[1].likes-a[1].likes);
+    h+='<div class="tt-section"><div class="tt-section-title">Sub-themes</div>';
+    const mxs=subs[0][1].likes;
+    for(const[nm,st]of subs.slice(0,8)){
+      h+=`<div class="tt-row"><span style="flex:1;color:#a0a8b8">${nm}</span><span style="color:#606878;font-family:'JetBrains Mono',monospace;font-size:10px">${st.posts}p</span><div class="tt-bar-bg"><div class="tt-bar" style="width:${st.likes/mxs*100}%;background:${color}"></div></div><span style="color:#e0e4ea;font-family:'JetBrains Mono',monospace;font-size:10px;min-width:42px;text-align:right">${st.likes.toLocaleString()}</span></div>`;}
+    h+='</div>';
+  }else{
+    h+=`<div class="tt-cluster" style="color:${color};background:${color}18;border:1px solid ${color}40">${d.cluster}</div>`;
+    h+=`<div class="tt-stat"><span class="label">Engagement</span><span class="value">${d.likes.toLocaleString()} likes</span></div>`;
+    h+=`<div class="tt-stat"><span class="label">Posts</span><span class="value">${d.posts}</span></div>`;
+    h+=`<div class="tt-stat"><span class="label">Authors</span><span class="value">${d.authors.length}</span></div>`;
+    h+='<div class="tt-section"><div class="tt-section-title">Company share</div>';
+    const mx=Math.max(...Object.values(d.companies));
+    for(const co of companyOrder){const lk=d.companies[co]||0;if(!lk)continue;
+      h+=`<div class="tt-row"><span style="flex:1;color:${companyColors[co]}">${co}</span><div class="tt-bar-bg"><div class="tt-bar" style="width:${lk/mx*100}%;background:${companyColors[co]}"></div></div><span style="color:#e0e4ea;font-family:'JetBrains Mono',monospace;font-size:10px;min-width:50px;text-align:right">${(lk/d.likes*100).toFixed(0)}%</span></div>`;}
+    h+='</div>';
+    h+='<div class="tt-section"><div class="tt-section-title">Authors</div>';
+    for(const a of d.authors)h+=`<div class="tt-row"><span style="color:${companyColors[companyMap[a]]}">${a}</span></div>`;
+    h+='</div>';
+  }
+  tooltip.html(h).classed("visible",true);
+  const r=tooltip.node().getBoundingClientRect();
+  let l=event.clientX+16,t=event.clientY-10;
+  if(l+r.width>W-20)l=event.clientX-r.width-16;
+  if(t+r.height>H-20)t=H-r.height-20;if(t<10)t=10;
+  tooltip.style("left",l+"px").style("top",t+"px");
+}
+function hideTT(){tooltip.classed("visible",false)}
+
+// Highlight
+let sel=null;
+function hi(d){
+  const c=new Set([d.id]);
+  links.forEach(l=>{const s=typeof l.source==='object'?l.source.id:l.source,t=typeof l.target==='object'?l.target.id:l.target;if(s===d.id)c.add(t);if(t===d.id)c.add(s);});
+  linkSel.attr("stroke-opacity",l=>{const s=typeof l.source==='object'?l.source.id:l.source,t=typeof l.target==='object'?l.target.id:l.target;return(s===d.id||t===d.id)?0.35:0.01;})
+    .attr("stroke-width",l=>{const s=typeof l.source==='object'?l.source.id:l.source,t=typeof l.target==='object'?l.target.id:l.target;return(s===d.id||t===d.id)?Math.max(1.5,l.weight*0.8):0.2;});
+  subSel.select(".sub-main").attr("fill-opacity",n=>c.has(n.id)?0.3:0.03).attr("stroke-opacity",n=>c.has(n.id)?0.6:0.05);
+  subSel.select(".sub-label").attr("fill-opacity",n=>c.has(n.id)?0.9:0.08);
+  subSel.selectAll(".co-arc").attr("opacity",function(){return c.has(d3.select(this.parentNode).datum().id)?0.85:0.06;});
+  macroSel.select(".macro-main").attr("fill-opacity",n=>c.has(n.id)?0.2:0.025).attr("stroke-opacity",n=>c.has(n.id)?0.7:0.08);
+  macroSel.select(".macro-label").attr("fill-opacity",n=>c.has(n.id)?1:0.12);
+  macroSel.select(".macro-count").attr("fill-opacity",n=>c.has(n.id)?0.5:0.06);
+  macroSel.selectAll(".co-arc").attr("opacity",function(){return c.has(d3.select(this.parentNode).datum().id)?0.7:0.06;});
+}
+function rh(){
+  linkSel.attr("stroke-opacity",0.07).attr("stroke-width",d=>Math.max(0.4,d.weight*0.3));
+  subSel.select(".sub-main").attr("fill-opacity",0.14).attr("stroke-opacity",0.3);
+  subSel.select(".sub-label").attr("fill-opacity",0.55);subSel.selectAll(".co-arc").attr("opacity",0.7);
+  macroSel.select(".macro-main").attr("fill-opacity",0.1).attr("stroke-opacity",0.45);
+  macroSel.select(".macro-label").attr("fill-opacity",0.85);macroSel.select(".macro-count").attr("fill-opacity",0.35);
+  macroSel.selectAll(".co-arc").attr("opacity",0.6);
+}
+function onIn(e,d){if(!sel)hi(d);showTT(e,d)}
+function onMv(e,d){showTT(e,d)}
+function onOut(){if(!sel)rh();hideTT()}
+function onCl(e,d){e.stopPropagation();if(sel===d){sel=null;rh();}else{sel=d;hi(d);}}
+svg.on("click",()=>{sel=null;rh();hideTT()});
+[subSel,macroSel].forEach(s=>{s.on("mouseover",onIn).on("mousemove",onMv).on("mouseout",onOut).on("click",onCl);});
+
+sim.on("tick",()=>{
+  linkSel.attr("x1",d=>d.source.x).attr("y1",d=>d.source.y).attr("x2",d=>d.target.x).attr("y2",d=>d.target.y);
+  subSel.attr("transform",d=>`translate(${d.x},${d.y})`);macroSel.attr("transform",d=>`translate(${d.x},${d.y})`);
+});
+function ds(e,d){if(!e.active)sim.alphaTarget(0.3).restart();d.fx=d.x;d.fy=d.y}
+function dg(e,d){d.fx=e.x;d.fy=e.y}
+function de(e,d){if(!e.active)sim.alphaTarget(0);d.fx=null;d.fy=null}
+
+// Filters
+const activeCo=new Set(["Rolls-Royce","Anduril","Helsing"]);
+d3.selectAll(".filter-btn").on("click",function(){
+  const co=this.dataset.value;
+  if(activeCo.has(co)){if(activeCo.size===1)return;activeCo.delete(co);d3.select(this).classed("active",false);}
+  else{activeCo.add(co);d3.select(this).classed("active",true);}
+  sel=null;rh();
+  subSel.attr("display",d=>{for(const co of companyOrder)if(activeCo.has(co)&&(d.companies[co]||0)>0)return null;return"none";});
+  const vc=new Set();subSel.each(function(d){if(d3.select(this).attr("display")!=="none")vc.add(d.cluster);});
+  macroSel.attr("display",d=>vc.has(d.id)?null:"none");
+  linkSel.attr("display",l=>{const t=typeof l.target==='object'?l.target.id:l.target;const sn=nodes.find(n=>n.id===t);if(!sn)return"none";for(const co of companyOrder)if(activeCo.has(co)&&(sn.companies[co]||0)>0)return null;return"none";});
+  sim.alpha(0.4).restart();
+});
+
+window.addEventListener('resize',()=>{const w=window.innerWidth,h=window.innerHeight;svg.attr("width",w).attr("height",h);sim.alpha(0.2).restart();});
+</script>
+</body>
+</html>
